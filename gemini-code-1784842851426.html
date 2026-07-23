@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit & To-Do Tracker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-700 pb-4 gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-indigo-400">Tracker Dashboard</h1>
+        <p class="text-slate-400 text-sm">Stay consistent, measure your daily and weekly progress.</p>
+      </div>
+      <div class="flex gap-2 text-sm text-slate-300 bg-slate-800 p-3 rounded-lg border border-slate-700">
+        <div><strong class="text-indigo-400">Current Day:</strong> <span id="current-day-label"></span></div>
+        <span class="mx-2">|</span>
+        <div><strong class="text-indigo-400">Current Week:</strong> <span id="current-week-label"></span></div>
+      </div>
+    </header>
+
+    <!-- Main Grid: Tracker Inputs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <!-- Habits Section -->
+      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-emerald-400 flex items-center gap-2">
+              <span>🔄</span> Habits
+            </h2>
+            <span class="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded">Resets Daily</span>
+          </div>
+
+          <form id="add-habit-form" class="flex gap-2 mb-4">
+            <input type="text" id="habit-input" placeholder="Add a new habit..." required
+                   class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Add</button>
+          </form>
+
+          <ul id="habit-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+        </div>
+      </section>
+
+      <!-- To-Dos Section -->
+      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-amber-400 flex items-center gap-2">
+              <span>✅</span> Daily To-Dos
+            </h2>
+            <span class="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded">Resets Daily</span>
+          </div>
+
+          <form id="add-todo-form" class="flex gap-2 mb-4">
+            <input type="text" id="todo-input" placeholder="Add a task..." required
+                   class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Add</button>
+          </form>
+
+          <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Analytics Section -->
+    <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg space-y-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 class="text-xl font-semibold text-indigo-300">Progress & Stats</h2>
+          <p class="text-slate-400 text-sm">Visual breakdown of items completed versus added.</p>
+        </div>
+
+        <!-- Historical Week Selector -->
+        <div class="flex items-center gap-2">
+          <label for="week-select" class="text-sm text-slate-300">View Week Stats:</label>
+          <select id="week-select" class="bg-slate-900 border border-slate-700 text-sm rounded-lg p-2 focus:outline-none focus:border-indigo-500">
+          </select>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Daily Progress Bar Chart -->
+        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/50 flex flex-col items-center">
+          <h3 class="text-sm font-medium text-slate-300 mb-2">Today's Completed vs Total</h3>
+          <div class="w-full h-48">
+            <canvas id="dailyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Weekly Column/Bar Chart -->
+        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/50 flex flex-col items-center">
+          <h3 class="text-sm font-medium text-slate-300 mb-2">Selected Week Totals</h3>
+          <div class="w-full h-48">
+            <canvas id="weeklyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Monthly Pie Chart & Percentage -->
+        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/50 flex flex-col items-center justify-between">
+          <h3 class="text-sm font-medium text-slate-300 mb-2">Monthly Completion Rate</h3>
+          <div class="w-full h-40 relative flex justify-center">
+            <canvas id="monthlyPieChart"></canvas>
+          </div>
+          <div class="text-center mt-2">
+            <span id="monthly-percent" class="text-2xl font-bold text-indigo-400">0%</span>
+            <span id="monthly-count-detail" class="block text-xs text-slate-400">(0 completed / 0 created)</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // --- APP STATE & STORAGE HELPER ---
+    const STORAGE_KEY = 'habit_todo_tracker_data_v1';
+    
+    // Get ISO date string YYYY-MM-DD
+    function getTodayString() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    // Get ISO week string YYYY-Wxx
+    function getWeekString(d = new Date()) {
+      const date = new Date(d.getTime());
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+      const week1 = new Date(date.getFullYear(), 0, 4);
+      const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+      return `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    }
+
+    let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      items: [], // { id, type: 'habit'|'todo', title, createdAt: 'YYYY-MM-DD' }
+      completions: {}, // { 'YYYY-MM-DD': { [itemId]: true } }
+      selectedWeek: getWeekString()
+    };
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      render();
+    }
+
+    // --- DOM ELEMENTS ---
+    const habitListEl = document.getElementById('habit-list');
+    const todoListEl = document.getElementById('todo-list');
+    const habitForm = document.getElementById('add-habit-form');
+    const todoForm = document.getElementById('add-todo-form');
+    const habitInput = document.getElementById('habit-input');
+    const todoInput = document.getElementById('todo-input');
+    const weekSelect = document.getElementById('week-select');
+    
+    document.getElementById('current-day-label').textContent = getTodayString();
+    document.getElementById('current-week-label').textContent = getWeekString();
+
+    // --- ADD ITEMS ---
+    habitForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = habitInput.value.trim();
+      if (!title) return;
+      state.items.push({ id: Date.now().toString(), type: 'habit', title, createdAt: getTodayString() });
+      habitInput.value = '';
+      saveState();
+    });
+
+    todoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = todoInput.value.trim();
+      if (!title) return;
+      state.items.push({ id: Date.now().toString(), type: 'todo', title, createdAt: getTodayString() });
+      todoInput.value = '';
+      saveState();
+    });
+
+    function toggleCompletion(itemId) {
+      const today = getTodayString();
+      if (!state.completions[today]) state.completions[today] = {};
+      
+      if (state.completions[today][itemId]) {
+        delete state.completions[today][itemId];
+      } else {
+        state.completions[today][itemId] = true;
+      }
+      saveState();
+    }
+
+    function deleteItem(itemId) {
+      state.items = state.items.filter(item => item.id !== itemId);
+      saveState();
+    }
+
+    // --- CHARTS INITIALIZATION ---
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' }, beginAtZero: true }
+      }
+    };
+
+    const dailyChart = new Chart(document.getElementById('dailyChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Habits', 'To-Dos'],
+        datasets: [
+          { label: 'Completed', data: [0, 0], backgroundColor: '#10b981' },
+          { label: 'Remaining', data: [0, 0], backgroundColor: '#334155' }
+        ]
+      },
+      options: chartOptions
+    });
+
+    const weeklyChart = new Chart(document.getElementById('weeklyChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Habits', 'To-Dos'],
+        datasets: [
+          { label: 'Completed', data: [0, 0], backgroundColor: '#6366f1' },
+          { label: 'Total Tracked', data: [0, 0], backgroundColor: '#334155' }
+        ]
+      },
+      options: chartOptions
+    });
+
+    const monthlyPieChart = new Chart(document.getElementById('monthlyPieChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Completed', 'Incomplete'],
+        datasets: [{
+          data: [0, 1],
+          backgroundColor: ['#6366f1', '#334155']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+      }
+    });
+
+    // --- RENDER & DATA PROCESSING ---
+    function render() {
+      const today = getTodayString();
+      const currentCompletions = state.completions[today] || {};
+
+      // Clear lists
+      habitListEl.innerHTML = '';
+      todoListEl.innerHTML = '';
+
+      // Render Items
+      state.items.forEach(item => {
+        const isChecked = !!currentCompletions[item.id];
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-700/50';
+        li.innerHTML = `
+          <label class="flex items-center gap-3 cursor-pointer flex-1">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} 
+                   class="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                   onchange="toggleCompletion('${item.id}')">
+            <span class="text-sm ${isChecked ? 'line-through text-slate-500' : 'text-slate-200'}">${item.title}</span>
+          </label>
+          <button onclick="deleteItem('${item.id}')" class="text-slate-500 hover:text-red-400 text-xs px-2">✕</button>
+        `;
+
+        if (item.type === 'habit') {
+          habitListEl.appendChild(li);
+        } else {
+          todoListEl.appendChild(li);
+        }
+      });
+
+      // Populate Weeks Dropdown
+      updateWeekSelector();
+
+      // Update Charts
+      updateDailyChart(today);
+      updateWeeklyChart(weekSelect.value || getWeekString());
+      updateMonthlyChart();
+    }
+
+    function updateWeekSelector() {
+      const weeks = new Set([getWeekString()]);
+      Object.keys(state.completions).forEach(dateStr => {
+        weeks.add(getWeekString(new Date(dateStr)));
+      });
+
+      const sortedWeeks = Array.from(weeks).sort().reverse();
+      weekSelect.innerHTML = sortedWeeks.map(w => 
+        `<option value="${w}" ${w === state.selectedWeek ? 'selected' : ''}>${w}</option>`
+      ).join('');
+
+      weekSelect.onchange = (e) => {
+        state.selectedWeek = e.target.value;
+        updateWeeklyChart(state.selectedWeek);
+      };
+    }
+
+    function updateDailyChart(today) {
+      const habits = state.items.filter(i => i.type === 'habit');
+      const todos = state.items.filter(i => i.type === 'todo');
+      const completions = state.completions[today] || {};
+
+      const habitsDone = habits.filter(h => completions[h.id]).length;
+      const todosDone = todos.filter(t => completions[t.id]).length;
+
+      dailyChart.data.datasets[0].data = [habitsDone, todosDone];
+      dailyChart.data.datasets[1].data = [habits.length - habitsDone, todos.length - todosDone];
+      dailyChart.update();
+    }
+
+    function updateWeeklyChart(targetWeek) {
+      let habitDoneCount = 0, habitTotalCount = 0;
+      let todoDoneCount = 0, todoTotalCount = 0;
+
+      // Scan through all stored completion days that belong to the selected week
+      Object.keys(state.completions).forEach(dateStr => {
+        if (getWeekString(new Date(dateStr)) === targetWeek) {
+          const dayCompletions = state.completions[dateStr];
+          state.items.forEach(item => {
+            if (item.type === 'habit') {
+              habitTotalCount++;
+              if (dayCompletions[item.id]) habitDoneCount++;
+            } else {
+              todoTotalCount++;
+              if (dayCompletions[item.id]) todoDoneCount++;
+            }
+          });
+        }
+      });
+
+      weeklyChart.data.datasets[0].data = [habitDoneCount, todoDoneCount];
+      weeklyChart.data.datasets[1].data = [habitTotalCount, todoTotalCount];
+      weeklyChart.update();
+    }
+
+    function updateMonthlyChart() {
+      const now = new Date();
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      
+      let totalCreatedInMonth = 0;
+      let totalCompletedInMonth = 0;
+
+      Object.keys(state.completions).forEach(dateStr => {
+        if (dateStr.startsWith(currentYearMonth)) {
+          const dayCompletions = state.completions[dateStr];
+          state.items.forEach(item => {
+            totalCreatedInMonth++;
+            if (dayCompletions[item.id]) {
+              totalCompletedInMonth++;
+            }
+          });
+        }
+      });
+
+      const percentage = totalCreatedInMonth > 0 
+        ? Math.round((totalCompletedInMonth / totalCreatedInMonth) * 100) 
+        : 0;
+
+      document.getElementById('monthly-percent').textContent = `${percentage}%`;
+      document.getElementById('monthly-count-detail').textContent = 
+        `(${totalCompletedInMonth} completed / ${totalCreatedInMonth} tracked events)`;
+
+      const remaining = totalCreatedInMonth - totalCompletedInMonth;
+      monthlyPieChart.data.datasets[0].data = totalCreatedInMonth > 0 
+        ? [totalCompletedInMonth, remaining] 
+        : [0, 1];
+      
+      monthlyPieChart.update();
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
